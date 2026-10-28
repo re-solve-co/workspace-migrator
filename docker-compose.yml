@@ -1,0 +1,13 @@
+services:
+  workspace-migrator:
+    build: .
+    container_name: workspace-migrator
+    restart: unless-stopped
+    ports:
+      - "3050:3050"
+    volumes:
+      - ./reports:/app/reports
+      - rclone-config:/root/.config/rclone
+
+volumes:
+  rclone-config:

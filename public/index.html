@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workspace Migration Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', -apple-system, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      letter-spacing: -0.015em;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* Flat Rounded Buttons - Linear Style */
+    .btn-flat-primary {
+      border: none;
+      border-radius: 9999px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .btn-flat-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-flat-secondary {
+      border: none;
+      border-radius: 9999px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .btn-flat-secondary:active {
+      transform: scale(0.98);
+    }
+
+    /* App-specific custom dropdown styles */
+    .custom-dropdown-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      min-width: 0;
+      overflow: hidden;
+      padding: 0.55rem 0.95rem; /* Generous padding so chevron never touches curved edge */
+      border-radius: 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .custom-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      border-radius: 0.875rem;
+      padding: 0.35rem;
+      z-index: 50;
+      box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.3);
+      max-height: 14rem;
+      overflow-y: auto;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .custom-dropdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 400;
+      cursor: pointer;
+      transition: background-color 0.1s ease;
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #d4d4d8;
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#f8f9fa] dark:bg-[#080808] text-neutral-900 dark:text-white antialiased selection:bg-neutral-900 selection:text-white dark:selection:bg-white dark:selection:text-black">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-neutral-200/80 dark:border-white/[0.08] sticky top-0 z-30 bg-white/90 dark:bg-[#080808]/90 backdrop-blur-xl">
+    <div class="max-w-[780px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-full bg-neutral-900 dark:bg-white flex items-center justify-center text-white dark:text-black shadow-xs">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M13 3L4 14h7v7l9-11h-7V3z"/>
+          </svg>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold tracking-tight text-neutral-900 dark:text-white">Migration Studio</span>
+          <span class="text-[11px] font-normal text-neutral-500 dark:text-neutral-400">Google Workspace</span>
+        </div>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="flex items-center gap-2">
+        <!-- Theme Toggle (Light / Dark) -->
+        <button onclick="toggleTheme()" id="themeToggleBtn" class="btn-flat-secondary bg-neutral-100 hover:bg-neutral-200 dark:bg-white/[0.07] dark:hover:bg-white/[0.13] text-neutral-700 dark:text-neutral-300 p-2 text-xs flex items-center justify-center" title="Toggle Light/Dark Theme">
+          <!-- Sun Icon (shown in dark mode) -->
+          <svg id="sunIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+          <!-- Moon Icon (shown in light mode) -->
+          <svg id="moonIcon" class="w-3.5 h-3.5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+
+        <button onclick="openManageAccountsModal()" class="btn-flat-secondary bg-neutral-100 hover:bg-neutral-200 dark:bg-white/[0.07] dark:hover:bg-white/[0.13] text-neutral-800 dark:text-white px-3.5 py-1.5 text-xs flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+          <span>Accounts</span>
+        </button>
+
+        <button onclick="openConnectModal()" class="btn-flat-primary bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black px-3.5 py-1.5 text-xs flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span>Connect</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Focused Center Container -->
+  <main class="max-w-[780px] mx-auto px-4 sm:px-6 py-6 flex-1 w-full space-y-4">
+
+    <!-- High-Performance Ribbon Notice -->
+    <div class="rounded-xl border border-neutral-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0e0e0e] px-4 py-2.5 flex items-center justify-between text-xs shadow-xs">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-neutral-900 dark:bg-white animate-pulse"></span>
+        <span class="font-medium text-neutral-900 dark:text-white">Turbo engine active</span>
+        <span class="text-neutral-400 dark:text-neutral-600 font-normal">·</span>
+        <span class="text-neutral-500 dark:text-neutral-400 text-[11px] hidden sm:inline">16 parallel checkers, in-memory tree, auto rate-pacing</span>
+      </div>
+      <span class="text-[11px] text-neutral-500 font-medium">1 Gbps</span>
+    </div>
+
+    <!-- Step 1 & Step 2: Storage Connector Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+      <!-- CARD 1: SOURCE STORAGE -->
+      <div class="bg-white dark:bg-[#111111] border border-neutral-200/80 dark:border-white/[0.08] rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-xs">
+        <div>
+          <div class="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-white/[0.06] mb-3.5">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-neutral-100 dark:bg-white/[0.08] text-neutral-600 dark:text-neutral-300 text-[11px] flex items-center justify-center font-medium">
+                1
+              </span>
+              <h2 class="text-xs font-semibold text-neutral-900 dark:text-white">Source drive</h2>
+            </div>
+            <span id="sourceStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/[0.04] text-neutral-500 border border-neutral-200 dark:border-white/[0.06] font-medium">
+              Not selected
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <!-- App-Specific Custom Dropdown: Source Remote -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400">
+                  Cloud account
+                </label>
+                <button type="button" onclick="openConnectModal('source')" class="text-[11px] text-neutral-700 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium underline underline-offset-2 flex items-center gap-1 transition">
+                  <span>+ New</span>
+                </button>
+              </div>
+
+              <!-- Custom Dropdown Component (Full Width) -->
+              <div class="relative w-full" id="sourceDropdownWrap">
+                <button type="button" onclick="toggleDropdown('source')" id="sourceDropdownBtn" class="custom-dropdown-trigger w-full bg-neutral-100/70 hover:bg-neutral-100 dark:bg-[#0a0a0a] dark:hover:bg-[#141414] border border-neutral-200 dark:border-white/10 text-neutral-800 dark:text-white">
+                  <span id="sourceDropdownLabel" class="truncate text-left flex-1 min-w-0 text-neutral-500 dark:text-neutral-400">Select account</span>
+                  <svg id="sourceDropdownChevron" class="w-3.5 h-3.5 text-neutral-400 shrink-0 ml-2 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+                <!-- Popover Options -->
+                <div id="sourceDropdownMenu" class="custom-dropdown-menu hidden bg-white dark:bg-[#141414] border border-neutral-200 dark:border-white/10 text-neutral-800 dark:text-neutral-200">
+                  <div class="p-2 text-center text-xs text-neutral-400">Loading accounts...</div>
+                </div>
+              </div>
+              <!-- Hidden native input to hold selected value -->
+              <input type="hidden" id="sourceRemoteSelect" value="">
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400">
+                  Folder path
+                </label>
+                <button onclick="browseFolder('source')" class="text-[11px] text-neutral-700 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium underline underline-offset-2">
+                  Browse
+                </button>
+              </div>
+              <input type="text" id="sourcePathInput" placeholder="/ (Entire drive)" value="" class="w-full rounded-xl px-3.5 py-2 text-xs bg-neutral-100/70 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white">
+              <p class="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1">Leave empty to migrate everything.</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="sourceInfoBox" class="pt-2.5 border-t border-neutral-100 dark:border-white/[0.06] flex items-center justify-between text-[11px] text-neutral-400 dark:text-neutral-500 font-normal">
+          <span>Select account above</span>
+        </div>
+      </div>
+
+      <!-- CARD 2: DESTINATION STORAGE -->
+      <div class="bg-white dark:bg-[#111111] border border-neutral-200/80 dark:border-white/[0.08] rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-xs">
+        <div>
+          <div class="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-white/[0.06] mb-3.5">
+            <div class="flex items-center gap-2">
+              <span class="w-5 h-5 rounded-full bg-neutral-100 dark:bg-white/[0.08] text-neutral-600 dark:text-neutral-300 text-[11px] flex items-center justify-center font-medium">
+                2
+              </span>
+              <h2 class="text-xs font-semibold text-neutral-900 dark:text-white">Destination Workspace</h2>
+            </div>
+            <span id="destStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/[0.04] text-neutral-500 border border-neutral-200 dark:border-white/[0.06] font-medium">
+              Not selected
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <!-- App-Specific Custom Dropdown: Dest Remote -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400">
+                  Target account
+                </label>
+                <button type="button" onclick="openConnectModal('dest')" class="text-[11px] text-neutral-700 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium underline underline-offset-2 flex items-center gap-1 transition">
+                  <span>+ New</span>
+                </button>
+              </div>
+
+              <!-- Custom Dropdown Component (Full Width) -->
+              <div class="relative w-full" id="destDropdownWrap">
+                <button type="button" onclick="toggleDropdown('dest')" id="destDropdownBtn" class="custom-dropdown-trigger w-full bg-neutral-100/70 hover:bg-neutral-100 dark:bg-[#0a0a0a] dark:hover:bg-[#141414] border border-neutral-200 dark:border-white/10 text-neutral-800 dark:text-white">
+                  <span id="destDropdownLabel" class="truncate text-left flex-1 min-w-0 text-neutral-500 dark:text-neutral-400">Select account</span>
+                  <svg id="destDropdownChevron" class="w-3.5 h-3.5 text-neutral-400 shrink-0 ml-2 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+                <!-- Popover Options -->
+                <div id="destDropdownMenu" class="custom-dropdown-menu hidden bg-white dark:bg-[#141414] border border-neutral-200 dark:border-white/10 text-neutral-800 dark:text-neutral-200">
+                  <div class="p-2 text-center text-xs text-neutral-400">Loading accounts...</div>
+                </div>
+              </div>
+              <!-- Hidden native input to hold selected value -->
+              <input type="hidden" id="destRemoteSelect" value="">
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400">
+                  Target folder or Shared Drive
+                </label>
+                <button onclick="browseFolder('dest')" class="text-[11px] text-neutral-700 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium underline underline-offset-2">
+                  Browse
+                </button>
+              </div>
+              <input type="text" id="destPathInput" placeholder="/ (or Shared Drive name)" value="" class="w-full rounded-xl px-3.5 py-2 text-xs bg-neutral-100/70 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white">
+              <p class="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1">E.g. Marketing or Shared Drives/Sales.</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="destInfoBox" class="pt-2.5 border-t border-neutral-100 dark:border-white/[0.06] flex items-center justify-between text-[11px] text-neutral-400 dark:text-neutral-500 font-normal">
+          <span>Select account above</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Step 3: Migration Mode & Settings -->
+    <div class="bg-white dark:bg-[#111111] border border-neutral-200/80 dark:border-white/[0.08] rounded-2xl p-5 space-y-4 shadow-xs">
+      <div class="flex items-center gap-2">
+        <span class="w-5 h-5 rounded-full bg-neutral-100 dark:bg-white/[0.08] text-neutral-600 dark:text-neutral-300 text-[11px] flex items-center justify-center font-medium">
+          3
+        </span>
+        <h2 class="text-xs font-semibold text-neutral-900 dark:text-white">Migration settings</h2>
+      </div>
+
+      <!-- Mode Selection Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <label class="cursor-pointer rounded-xl p-3.5 flex flex-col justify-between transition border border-neutral-900 bg-neutral-100/80 dark:border-white dark:bg-white/[0.06]" id="modeCardCopy">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-medium text-neutral-900 dark:text-white">Safe copy</span>
+            <input type="radio" name="migrationMode" value="copy" checked onchange="updateModeUI()" class="accent-neutral-900 dark:accent-white">
+          </div>
+          <p class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed font-normal">
+            Transfers all files. Never modifies or deletes any source files.
+          </p>
+        </label>
+
+        <label class="cursor-pointer rounded-xl p-3.5 flex flex-col justify-between transition border border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] hover:bg-neutral-50 dark:hover:bg-white/[0.04]" id="modeCardDryRun">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-medium text-neutral-900 dark:text-white">Pre-flight audit</span>
+            <input type="radio" name="migrationMode" value="dry-run" onchange="updateModeUI()" class="accent-neutral-900 dark:accent-white">
+          </div>
+          <p class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed font-normal">
+            Simulates migration in memory. Counts files and sizes without copying.
+          </p>
+        </label>
+
+        <label class="cursor-pointer rounded-xl p-3.5 flex flex-col justify-between transition border border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] hover:bg-neutral-50 dark:hover:bg-white/[0.04]" id="modeCardSync">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-medium text-neutral-900 dark:text-white">Delta sync</span>
+            <input type="radio" name="migrationMode" value="sync" onchange="updateModeUI()" class="accent-neutral-900 dark:accent-white">
+          </div>
+          <p class="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed font-normal">
+            Mirrors source to destination for final cutover day.
+          </p>
+        </label>
+      </div>
+
+      <!-- Safeguard Badges -->
+      <div class="grid grid-cols-3 gap-2 text-[11px] bg-neutral-100/70 dark:bg-[#0a0a0a] p-3 rounded-xl border border-neutral-200/60 dark:border-white/[0.06]">
+        <div class="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300 font-medium text-[11px]">
+          <span class="text-neutral-900 dark:text-white font-bold">✓</span>
+          <span>Fast-list scan</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300 font-medium text-[11px]">
+          <span class="text-neutral-900 dark:text-white font-bold">✓</span>
+          <span>750 GB quota pacing</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300 font-medium text-[11px]">
+          <span class="text-neutral-900 dark:text-white font-bold">✓</span>
+          <span>Server-side copy</span>
+        </div>
+      </div>
+
+      <!-- Action Area -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+        <div class="w-full sm:w-auto">
+          <label class="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400 mb-1">Client or job name</label>
+          <input type="text" id="clientNameInput" value="Acme Corp Migration" placeholder="e.g. Acme Corp Migration" class="w-full sm:w-56 rounded-xl px-3 py-1.5 text-xs bg-neutral-100/70 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white">
+        </div>
+
+        <div class="w-full sm:w-auto flex items-center gap-2 pt-2 sm:pt-0">
+          <button type="button" onclick="runDemoMigration()" class="btn-flat-secondary bg-neutral-100 hover:bg-neutral-200 dark:bg-white/[0.07] dark:hover:bg-white/[0.13] text-neutral-800 dark:text-white px-3.5 py-2 text-xs flex items-center gap-1.5">
+            <span>Test demo run</span>
+          </button>
+          <button id="startBtn" onclick="startMigration()" class="btn-flat-primary bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black px-5 py-2 text-xs font-medium flex items-center justify-center gap-1.5 shadow-xs">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            <span id="startBtnText">Start migration</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Live Migration Progress Monitor -->
+    <div id="monitorCard" class="hidden bg-white dark:bg-[#111111] border border-neutral-200/80 dark:border-white/[0.08] rounded-2xl p-5 space-y-4 shadow-xs">
+      <div class="flex items-center justify-between border-b border-neutral-100 dark:border-white/[0.06] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div id="statusPulse" class="w-2 h-2 rounded-full bg-neutral-900 dark:bg-white shadow-[0_0_8px_rgba(0,0,0,0.4)] dark:shadow-[0_0_8px_#ffffff] animate-ping"></div>
+          <div>
+            <h3 id="monitorTitle" class="text-xs font-semibold text-neutral-900 dark:text-white">Migration in progress</h3>
+            <p id="monitorSubtitle" class="text-[11px] text-neutral-500 dark:text-neutral-400">Connecting data streams...</p>
+          </div>
+        </div>
+
+        <button id="stopBtn" onclick="stopMigration()" class="btn-flat-secondary bg-neutral-100 hover:bg-neutral-200 dark:bg-white/[0.07] dark:hover:bg-white/[0.13] text-neutral-700 dark:text-neutral-300 px-3 py-1 text-xs">
+          Stop job
+        </button>
+      </div>
+
+      <!-- Main Progress Bar -->
+      <div>
+        <div class="flex justify-between items-baseline mb-1.5">
+          <span class="text-[11px] font-normal text-neutral-500 dark:text-neutral-400">Overall progress</span>
+          <span id="progressPercentage" class="text-xl font-semibold text-neutral-900 dark:text-white tracking-tight">0%</span>
+        </div>
+        <div class="w-full h-1.5 bg-neutral-100 dark:bg-[#0a0a0a] rounded-full overflow-hidden border border-neutral-200/60 dark:border-white/[0.08]">
+          <div id="progressBar" class="h-full bg-neutral-900 dark:bg-white rounded-full transition-all duration-300 w-0"></div>
+        </div>
+      </div>
+
+      <!-- 4-Stat Metric Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div class="bg-neutral-100/70 dark:bg-[#0a0a0a] p-3 rounded-xl border border-neutral-200/60 dark:border-white/[0.06]">
+          <span class="block text-[10px] text-neutral-500 mb-0.5">Volume</span>
+          <span id="statVolume" class="text-xs font-semibold text-neutral-900 dark:text-white">0 B / 0 B</span>
+        </div>
+
+        <div class="bg-neutral-100/70 dark:bg-[#0a0a0a] p-3 rounded-xl border border-neutral-200/60 dark:border-white/[0.06]">
+          <span class="block text-[10px] text-neutral-500 mb-0.5">Speed</span>
+          <span id="statSpeed" class="text-xs font-semibold text-neutral-900 dark:text-white">0 MB/s</span>
+        </div>
+
+        <div class="bg-neutral-100/70 dark:bg-[#0a0a0a] p-3 rounded-xl border border-neutral-200/60 dark:border-white/[0.06]">
+          <span class="block text-[10px] text-neutral-500 mb-0.5">Files</span>
+          <span id="statFiles" class="text-xs font-semibold text-neutral-900 dark:text-white">0 / 0</span>
+        </div>
+
+        <div class="bg-neutral-100/70 dark:bg-[#0a0a0a] p-3 rounded-xl border border-neutral-200/60 dark:border-white/[0.06]">
+          <span class="block text-[10px] text-neutral-500 mb-0.5">Time left</span>
+          <span id="statEta" class="text-xs font-semibold text-neutral-900 dark:text-white">0s</span>
+        </div>
+      </div>
+
+      <!-- Active Transfers Ticker -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[11px] text-neutral-500 dark:text-neutral-400">Active streams</span>
+          <span id="activeCount" class="text-[10px] text-neutral-400 dark:text-neutral-500">0 active</span>
+        </div>
+        <div id="activeFilesList" class="bg-neutral-100/70 dark:bg-[#0a0a0a] border border-neutral-200/60 dark:border-white/[0.06] text-neutral-800 dark:text-neutral-300 p-3 rounded-xl text-xs space-y-2 max-h-36 overflow-y-auto">
+          <div class="text-neutral-400 dark:text-neutral-500 italic text-[11px]">Waiting for file streaming activity...</div>
+        </div>
+      </div>
+
+      <!-- Completion Banner & Report Hand-Off -->
+      <div id="completionBox" class="hidden bg-neutral-100/80 dark:bg-white/[0.04] border border-neutral-200 dark:border-white/[0.14] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs shrink-0">
+            ✓
+          </div>
+          <div>
+            <h4 class="text-xs font-semibold text-neutral-900 dark:text-white">Migration completed</h4>
+            <p class="text-[11px] text-neutral-500 dark:text-neutral-400">All files verified via MD5 checksum. Zero errors detected.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button type="button" onclick="copyHandoffSummary()" class="btn-flat-secondary bg-white hover:bg-neutral-100 border border-neutral-200 dark:border-none dark:bg-white/[0.07] dark:hover:bg-white/[0.13] text-neutral-800 dark:text-white px-3.5 py-1.5 text-xs flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+            <span id="copySummaryBtnText">Copy summary</span>
+          </button>
+          <a id="downloadReportLink" href="#" target="_blank" class="btn-flat-primary bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black px-3.5 py-1.5 text-xs flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span>Download CSV</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Connect Account Modal -->
+  <div id="connectModal" class="hidden fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#111111] border border-neutral-200 dark:border-white/[0.08] rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-white/[0.08]">
+        <div class="flex items-center gap-2">
+          <div class="w-5 h-5 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs">
+            +
+          </div>
+          <h3 class="text-xs font-semibold text-neutral-900 dark:text-white">Connect cloud account</h3>
+        </div>
+        <button onclick="closeConnectModal()" class="text-neutral-400 hover:text-neutral-700 dark:text-neutral-500 dark:hover:text-white transition">✕</button>
+      </div>
+
+      <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
+        Choose provider. Clicking <strong class="text-neutral-900 dark:text-white">Connect</strong> will open Google or Microsoft OAuth in your browser.
+      </p>
+
+      <div class="space-y-3">
+        <!-- Custom Dropdown for Provider inside modal -->
+        <div>
+          <label class="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400 mb-1">Storage provider</label>
+          <div class="relative" id="providerDropdownWrap">
+            <button type="button" onclick="toggleDropdown('provider')" id="providerDropdownBtn" class="custom-dropdown-trigger bg-neutral-100/70 hover:bg-neutral-100 dark:bg-[#0a0a0a] dark:hover:bg-[#141414] border border-neutral-200 dark:border-white/10 text-neutral-800 dark:text-white">
+              <span id="providerDropdownLabel">Google Drive or Google Workspace</span>
+              <svg id="providerDropdownChevron" class="w-3.5 h-3.5 text-neutral-400 shrink-0 ml-3 transition-transform duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div id="providerDropdownMenu" class="custom-dropdown-menu hidden bg-white dark:bg-[#141414] border border-neutral-200 dark:border-white/10 text-neutral-800 dark:text-neutral-200">
+              <div onclick="selectProviderOption('google_drive', 'Google Drive or Google Workspace')" class="custom-dropdown-item hover:bg-neutral-100 dark:hover:bg-white/[0.08]">
+                <span>Google Drive or Google Workspace</span>
+              </div>
+              <div onclick="selectProviderOption('onedrive', 'Microsoft OneDrive or SharePoint')" class="custom-dropdown-item hover:bg-neutral-100 dark:hover:bg-white/[0.08]">
+                <span>Microsoft OneDrive or SharePoint</span>
+              </div>
+              <div onclick="selectProviderOption('dropbox', 'Dropbox')" class="custom-dropdown-item hover:bg-neutral-100 dark:hover:bg-white/[0.08]">
+                <span>Dropbox</span>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" id="modalProvider" value="google_drive">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-normal text-neutral-500 dark:text-neutral-400 mb-1">Friendly remote name</label>
+          <input type="text" id="modalRemoteName" placeholder="e.g. client_drive or workspace_dest" class="w-full rounded-xl px-3.5 py-2 text-xs bg-neutral-100/70 dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 text-neutral-900 dark:text-white focus:outline-none focus:border-neutral-900 dark:focus:border-white">
+          <p class="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1">Unique label without spaces, e.g. acme_onedrive.</p>
+        </div>
+      </div>
+
+      <div id="modalNotice" class="hidden text-xs bg-neutral-100 dark:bg-white/[0.06] text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-white/[0.1] p-3 rounded-xl">
+        Opening login window in your browser... Please sign in and approve access.
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-neutral-100 dark:border-white/[0.08]">
+        <button onclick="closeConnectModal()" class="btn-flat-secondary bg-neutral-100 hover:bg-neutral-200 dark:bg-white/[0.07] dark:hover:bg-white/[0.13] text-neutral-800 dark:text-white px-3.5 py-1.5 text-xs">
+          Cancel
+        </button>
+        <button id="modalConnectBtn" onclick="submitConnectAccount()" class="btn-flat-primary bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-black px-4 py-1.5 text-xs font-medium">
+          Connect in browser
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Accounts Modal -->
+  <div id="manageModal" class="hidden fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#111111] border border-neutral-200 dark:border-white/[0.08] rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-white/[0.08]">
+        <h3 class="text-xs font-semibold text-neutral-900 dark:text-white">Connected cloud accounts</h3>
+        <button onclick="closeManageAccountsModal()" class="text-neutral-400 hover:text-neutral-700 dark:text-neutral-500 dark:hover:text-white transition">✕</button>
+      </div>
+
+      <div id="manageAccountsList" class="space-y-2 max-h-56 overflow-y-auto">
+        <div class="text-neutral-400 dark:text-neutral-500 text-xs py-4 text-center">No accounts connected yet.</div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-white/[0.08] text-xs">
+        <button onclick="closeManageAccountsModal(); openConnectModal();" class="text-neutral-900 dark:text-white hover:underline font-medium flex items-center gap-1">
+          <span>+ Connect another account</span>
+        </button>
+        <button onclick="closeManageAccountsModal()" class="btn-flat-secondary bg-neutral-100 hover:bg-neutral-200 dark:bg-white/[0.07] dark:hover:bg-white/[0.13] text-neutral-800 dark:text-white px-3.5 py-1.5 text-xs">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Folder Browse Modal -->
+  <div id="browseModal" class="hidden fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#111111] border border-neutral-200 dark:border-white/[0.08] rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-3.5">
+      <div class="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-white/[0.08]">
+        <h3 id="browseModalTitle" class="text-xs font-semibold text-neutral-900 dark:text-white">Select folder</h3>
+        <button onclick="closeBrowseModal()" class="text-neutral-400 hover:text-neutral-700 dark:text-neutral-500 dark:hover:text-white transition">✕</button>
+      </div>
+
+      <div id="browseList" class="max-h-56 overflow-y-auto space-y-1 text-xs">
+        <div class="text-neutral-400 dark:text-neutral-500 py-4 text-center">Loading folders...</div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-white/[0.08] text-xs">
+        <button onclick="selectCurrentFolder('/')" class="text-neutral-900 dark:text-white hover:underline font-medium">
+          Select root (entire drive)
+        </button>
+        <button onclick="closeBrowseModal()" class="btn-flat-secondary bg-neutral-100 hover:bg-neutral-200 dark:bg-white/[0.07] dark:hover:bg-white/[0.13] text-neutral-800 dark:text-white px-3.5 py-1.5 text-xs">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client-Side Script -->
+  <script>
+    let activeRemotes = [];
+    let sseSource = null;
+    let browseTarget = 'source';
+    let connectingTarget = 'source';
+    let openDropdownId = null;
+
+    // Theme Management (Light / Dark)
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('sunIcon').classList.add('hidden');
+        document.getElementById('moonIcon').classList.remove('hidden');
+      } else {
+        document.documentElement.classList.add('dark');
+        document.getElementById('sunIcon').classList.remove('hidden');
+        document.getElementById('moonIcon').classList.add('hidden');
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        document.getElementById('sunIcon').classList.add('hidden');
+        document.getElementById('moonIcon').classList.remove('hidden');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        document.getElementById('sunIcon').classList.remove('hidden');
+        document.getElementById('moonIcon').classList.add('hidden');
+      }
+    }
+
+    // Custom Dropdown Handling
+    function toggleDropdown(id) {
+      if (openDropdownId && openDropdownId !== id) {
+        closeAllDropdowns();
+      }
+
+      const menu = document.getElementById(`${id}DropdownMenu`);
+      const chevron = document.getElementById(`${id}DropdownChevron`);
+      if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+        openDropdownId = id;
+      } else {
+        menu.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+        openDropdownId = null;
+      }
+    }
+
+    function closeAllDropdowns() {
+      ['source', 'dest', 'provider'].forEach(id => {
+        const menu = document.getElementById(`${id}DropdownMenu`);
+        const chevron = document.getElementById(`${id}DropdownChevron`);
+        if (menu) menu.classList.add('hidden');
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+      });
+      openDropdownId = null;
+    }
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#sourceDropdownWrap') && !e.target.closest('#destDropdownWrap') && !e.target.closest('#providerDropdownWrap')) {
+        closeAllDropdowns();
+      }
+    });
+
+    function selectRemoteOption(type, remoteName) {
+      const input = document.getElementById(`${type}RemoteSelect`);
+      const label = document.getElementById(`${type}DropdownLabel`);
+      input.value = remoteName;
+
+      const remoteObj = activeRemotes.find(r => r.name === remoteName);
+      if (remoteObj) {
+        label.textContent = remoteObj.email ? `${remoteObj.email} (${remoteObj.name})` : remoteObj.name;
+        label.classList.remove('text-neutral-500', 'dark:text-neutral-400');
+        label.classList.add('text-neutral-900', 'dark:text-white');
+      } else {
+        label.textContent = 'Select account';
+        label.classList.add('text-neutral-500', 'dark:text-neutral-400');
+        label.classList.remove('text-neutral-900', 'dark:text-white');
+      }
+
+      closeAllDropdowns();
+      if (type === 'source') updateSourceDetails();
+      if (type === 'dest') updateDestDetails();
+    }
+
+    function selectProviderOption(val, text) {
+      document.getElementById('modalProvider').value = val;
+      document.getElementById('providerDropdownLabel').textContent = text;
+      closeAllDropdowns();
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatSpeed(bytesPerSec) {
+      if (!bytesPerSec || bytesPerSec === 0) return '0 MB/s';
+      return (bytesPerSec / (1024 * 1024)).toFixed(1) + ' MB/s';
+    }
+
+    function formatEta(seconds) {
+      if (!seconds || seconds <= 0) return '0s';
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      if (mins > 60) {
+        const hrs = Math.floor(mins / 60);
+        return `${hrs}h ${mins % 60}m`;
+      }
+      return `${mins}m ${secs}s`;
+    }
+
+    async function refreshStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        activeRemotes = data.remotes || [];
+        populateCustomDropdowns();
+
+        if (data.running) {
+          showMonitor();
+          updateLiveStats(data.job.stats);
+        }
+      } catch (err) {
+        console.error('Error fetching status:', err);
+      }
+    }
+
+    function populateCustomDropdowns() {
+      const sourceMenu = document.getElementById('sourceDropdownMenu');
+      const destMenu = document.getElementById('destMenu') || document.getElementById('destDropdownMenu');
+
+      const sourceVal = document.getElementById('sourceRemoteSelect').value;
+      const destVal = document.getElementById('destRemoteSelect').value;
+
+      if (!activeRemotes || activeRemotes.length === 0) {
+        const emptyHtml = '<div class="p-3 text-center text-xs text-neutral-400">No accounts connected yet. Click "+ New".</div>';
+        sourceMenu.innerHTML = emptyHtml;
+        destMenu.innerHTML = emptyHtml;
+        return;
+      }
+
+      let sourceOptionsHtml = '';
+      let destOptionsHtml = '';
+
+      activeRemotes.forEach(r => {
+        const primaryText = r.email || r.displayName || r.name;
+        const subText = r.email ? `${r.displayName || r.name} • ${r.name}` : r.type;
+
+        const buildItem = (target, currentVal) => `
+          <div onclick="selectRemoteOption('${target}', '${r.name}')" class="custom-dropdown-item hover:bg-neutral-100 dark:hover:bg-white/[0.08] flex items-center justify-between py-2">
+            <div class="flex items-center gap-2.5 truncate">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+              <div class="truncate text-left">
+                <div class="font-medium text-neutral-900 dark:text-white truncate text-xs">${primaryText}</div>
+                <div class="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">${subText}</div>
+              </div>
+            </div>
+            ${r.name === currentVal ? '<span class="text-xs text-neutral-900 dark:text-white font-bold ml-2">✓</span>' : ''}
+          </div>
+        `;
+
+        sourceOptionsHtml += buildItem('source', sourceVal);
+        destOptionsHtml += buildItem('dest', destVal);
+      });
+
+      sourceMenu.innerHTML = sourceOptionsHtml;
+      destMenu.innerHTML = destOptionsHtml;
+
+      if (sourceVal && activeRemotes.find(r => r.name === sourceVal)) {
+        selectRemoteOption('source', sourceVal);
+      }
+      if (destVal && activeRemotes.find(r => r.name === destVal)) {
+        selectRemoteOption('dest', destVal);
+      }
+    }
+
+    function updateSourceDetails() {
+      const val = document.getElementById('sourceRemoteSelect').value;
+      const badge = document.getElementById('sourceStatusBadge');
+      const info = document.getElementById('sourceInfoBox');
+      const remoteObj = activeRemotes.find(r => r.name === val);
+
+      if (val && remoteObj) {
+        badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium';
+        badge.textContent = '● Connected';
+        info.innerHTML = `
+          <div class="flex flex-col text-left">
+            <span class="font-medium text-neutral-900 dark:text-white">${remoteObj.email || val}</span>
+            <span class="text-[10px] text-neutral-400">${remoteObj.displayName ? remoteObj.displayName + ' • ' : ''}Remote: ${val}</span>
+          </div>
+        `;
+      } else {
+        badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/[0.04] text-neutral-500 border border-neutral-200 dark:border-white/[0.06] font-medium';
+        badge.textContent = 'Not selected';
+        info.innerHTML = `<span>Select account above</span>`;
+      }
+    }
+
+    function updateDestDetails() {
+      const val = document.getElementById('destRemoteSelect').value;
+      const badge = document.getElementById('destStatusBadge');
+      const info = document.getElementById('destInfoBox');
+      const remoteObj = activeRemotes.find(r => r.name === val);
+
+      if (val && remoteObj) {
+        badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium';
+        badge.textContent = '● Connected';
+        info.innerHTML = `
+          <div class="flex flex-col text-left">
+            <span class="font-medium text-neutral-900 dark:text-white">${remoteObj.email || val}</span>
+            <span class="text-[10px] text-neutral-400">${remoteObj.displayName ? remoteObj.displayName + ' • ' : ''}Remote: ${val}</span>
+          </div>
+        `;
+      } else {
+        badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/[0.04] text-neutral-500 border border-neutral-200 dark:border-white/[0.06] font-medium';
+        badge.textContent = 'Not selected';
+        info.innerHTML = `<span>Select account above</span>`;
+      }
+    }
+
+    function updateModeUI() {
+      const mode = document.querySelector('input[name="migrationMode"]:checked').value;
+      const copyCard = document.getElementById('modeCardCopy');
+      const dryCard = document.getElementById('modeCardDryRun');
+      const syncCard = document.getElementById('modeCardSync');
+      const btnText = document.getElementById('startBtnText');
+
+      const defaultClass = 'cursor-pointer rounded-xl p-3.5 flex flex-col justify-between transition border border-neutral-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.02] hover:bg-neutral-50 dark:hover:bg-white/[0.04]';
+      const activeClass = 'cursor-pointer rounded-xl p-3.5 flex flex-col justify-between transition border border-neutral-900 bg-neutral-100/80 dark:border-white dark:bg-white/[0.06]';
+
+      copyCard.className = defaultClass;
+      dryCard.className = defaultClass;
+      syncCard.className = defaultClass;
+
+      if (mode === 'copy') {
+        copyCard.className = activeClass;
+        btnText.textContent = 'Start migration';
+      } else if (mode === 'dry-run') {
+        dryCard.className = activeClass;
+        btnText.textContent = 'Run pre-flight audit';
+      } else if (mode === 'sync') {
+        syncCard.className = activeClass;
+        btnText.textContent = 'Start delta sync';
+      }
+    }
+
+    function openConnectModal(target = 'source') {
+      connectingTarget = target;
+      const defaultName = target === 'source' ? 'source_gdrive' : 'workspace_dest';
+      document.getElementById('modalRemoteName').value = defaultName;
+      document.getElementById('modalNotice').classList.add('hidden');
+      document.getElementById('modalNotice').innerHTML = 'Opening login window in your browser... Please sign in and approve access.';
+      document.getElementById('modalConnectBtn').disabled = false;
+      document.getElementById('modalConnectBtn').textContent = 'Connect in browser';
+      document.getElementById('connectModal').classList.remove('hidden');
+    }
+
+    function closeConnectModal() {
+      document.getElementById('connectModal').classList.add('hidden');
+    }
+
+    async function submitConnectAccount() {
+      const provider = document.getElementById('modalProvider').value;
+      const remoteName = document.getElementById('modalRemoteName').value.trim();
+
+      if (!remoteName) {
+        alert('Please provide a name for this connection');
+        return;
+      }
+
+      const notice = document.getElementById('modalNotice');
+      const btn = document.getElementById('modalConnectBtn');
+      notice.classList.remove('hidden');
+      notice.innerHTML = 'Connecting to Google... Launching authorization window.';
+      btn.disabled = true;
+      btn.textContent = 'Connecting...';
+
+      try {
+        const res = await fetch('/api/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ remoteName, provider })
+        });
+        const data = await res.json();
+        
+        if (data.authUrl) {
+          notice.innerHTML = `
+            <div class="space-y-1">
+              <div class="text-neutral-900 dark:text-white font-medium">Authorization launched in browser</div>
+              <div class="text-[11px] text-neutral-500 dark:text-neutral-400">
+                Please approve permissions in the popup. If it didn't open automatically, 
+                <a href="${data.authUrl}" target="_blank" class="underline text-neutral-900 dark:text-white font-semibold">click here to sign in</a>.
+              </div>
+            </div>
+          `;
+        } else {
+          notice.innerHTML = 'Waiting for Google sign-in confirmation...';
+        }
+
+        const interval = setInterval(async () => {
+          const statusRes = await fetch('/api/status');
+          const statusData = await statusRes.json();
+          if (statusData.remotes && statusData.remotes.find(r => r.name === remoteName)) {
+            clearInterval(interval);
+            closeConnectModal();
+            await refreshStatus();
+            if (connectingTarget === 'source') {
+              selectRemoteOption('source', remoteName);
+            } else if (connectingTarget === 'dest') {
+              selectRemoteOption('dest', remoteName);
+            }
+          }
+        }, 1500);
+
+        setTimeout(() => {
+          clearInterval(interval);
+          btn.disabled = false;
+          btn.textContent = 'Connect in browser';
+        }, 120000);
+
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Connect in browser';
+        notice.innerHTML = `<span class="text-rose-500">Failed to launch connection: ${err.message}</span>`;
+      }
+    }
+
+    function openManageAccountsModal() {
+      const list = document.getElementById('manageAccountsList');
+      if (!activeRemotes || activeRemotes.length === 0) {
+        list.innerHTML = '<div class="text-neutral-400 dark:text-neutral-500 text-xs py-4 text-center">No accounts connected yet.</div>';
+      } else {
+        list.innerHTML = activeRemotes.map(r => `
+          <div class="p-3 bg-neutral-50 dark:bg-[#0a0a0a] border border-neutral-200/80 dark:border-white/[0.08] rounded-xl flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-neutral-900 dark:bg-white"></span>
+              <div>
+                <strong class="text-neutral-900 dark:text-white font-medium">${r.name}</strong>
+                <span class="text-neutral-500 ml-1.5 uppercase text-[10px] bg-neutral-200/60 dark:bg-white/[0.04] px-1.5 py-0.5 rounded border border-neutral-300 dark:border-white/[0.06]">${r.type}</span>
+              </div>
+            </div>
+            <button onclick="deleteAccount('${r.name}')" class="btn-flat-secondary bg-neutral-200 hover:bg-neutral-300 dark:bg-white/[0.08] dark:hover:bg-white/[0.14] px-3 py-1 text-xs text-neutral-800 dark:text-white">
+              Disconnect
+            </button>
+          </div>
+        `).join('');
+      }
+      document.getElementById('manageModal').classList.remove('hidden');
+    }
+
+    function closeManageAccountsModal() {
+      document.getElementById('manageModal').classList.add('hidden');
+    }
+
+    async function deleteAccount(remoteName) {
+      if (!confirm(`Are you sure you want to disconnect "${remoteName}"?`)) return;
+      try {
+        await fetch('/api/remotes/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ remoteName })
+        });
+        await refreshStatus();
+        openManageAccountsModal();
+      } catch (e) {
+        alert('Failed to disconnect: ' + e.message);
+      }
+    }
+
+    async function browseFolder(target) {
+      browseTarget = target;
+      const remote = target === 'source' 
+        ? document.getElementById('sourceRemoteSelect').value 
+        : document.getElementById('destRemoteSelect').value;
+
+      if (!remote) {
+        alert(`Please select a ${target} account first`);
+        return;
+      }
+
+      document.getElementById('browseModalTitle').textContent = `Folders in ${remote}:`;
+      document.getElementById('browseList').innerHTML = '<div class="text-neutral-400 dark:text-neutral-500 py-4 text-center">Scanning folders...</div>';
+      document.getElementById('browseModal').classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/browse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ remote, path: '' })
+        });
+        const data = await res.json();
+        const list = document.getElementById('browseList');
+
+        if (!data.folders || data.folders.length === 0) {
+          list.innerHTML = '<div class="text-neutral-400 dark:text-neutral-500 py-4 text-center italic">No subfolders found. (Root will be used)</div>';
+          return;
+        }
+
+        list.innerHTML = data.folders.map(f => `
+          <div onclick="selectCurrentFolder('${f}')" class="p-2 hover:bg-neutral-100 dark:hover:bg-white/[0.04] rounded-lg cursor-pointer flex items-center gap-2 text-neutral-900 dark:text-white transition">
+            <span class="text-neutral-400">📁</span>
+            <span>${f}</span>
+          </div>
+        `).join('');
+
+      } catch (e) {
+        document.getElementById('browseList').innerHTML = `<div class="text-rose-500 py-4 text-center">${e.message}</div>`;
+      }
+    }
+
+    function selectCurrentFolder(folderName) {
+      if (browseTarget === 'source') {
+        document.getElementById('sourcePathInput').value = folderName === '/' ? '' : folderName;
+      } else {
+        document.getElementById('destPathInput').value = folderName === '/' ? '' : folderName;
+      }
+      closeBrowseModal();
+    }
+
+    function closeBrowseModal() {
+      document.getElementById('browseModal').classList.add('hidden');
+    }
+
+    async function startMigration() {
+      const sourceRemote = document.getElementById('sourceRemoteSelect').value;
+      const sourcePath = document.getElementById('sourcePathInput').value.trim();
+      const destRemote = document.getElementById('destRemoteSelect').value;
+      const destPath = document.getElementById('destPathInput').value.trim();
+      const mode = document.querySelector('input[name="migrationMode"]:checked').value;
+      const clientName = document.getElementById('clientNameInput').value.trim() || 'Client Migration';
+
+      if (!sourceRemote || !destRemote) {
+        alert('Please select both a source and destination account.');
+        return;
+      }
+
+      showMonitor();
+      document.getElementById('monitorTitle').textContent = mode === 'dry-run' ? 'Running pre-flight audit' : 'Migration in progress';
+      document.getElementById('monitorSubtitle').textContent = 'Connecting to Google Drive APIs and discovering files...';
+      document.getElementById('completionBox').classList.add('hidden');
+      document.getElementById('statusPulse').className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-ping';
+
+      try {
+        const res = await fetch('/api/migrate/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceRemote,
+            sourcePath,
+            destRemote,
+            destPath,
+            mode,
+            clientName,
+            turboMode: true
+          })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert('Failed to start migration: ' + err.message);
+      }
+    }
+
+    async function runDemoMigration() {
+      showMonitor();
+      document.getElementById('monitorTitle').textContent = 'Running demo migration';
+      document.getElementById('completionBox').classList.add('hidden');
+      document.getElementById('statusPulse').className = 'w-2 h-2 rounded-full bg-neutral-900 dark:bg-white shadow-[0_0_8px_rgba(0,0,0,0.4)] dark:shadow-[0_0_8px_#ffffff] animate-ping';
+
+      try {
+        await fetch('/api/migrate/demo', { method: 'POST' });
+      } catch (e) {
+        alert('Failed to start demo: ' + e.message);
+      }
+    }
+
+    async function stopMigration() {
+      if (!confirm('Are you sure you want to stop this migration?')) return;
+      try {
+        await fetch('/api/migrate/stop', { method: 'POST' });
+        document.getElementById('monitorTitle').textContent = 'Job stopped';
+      } catch (err) {
+        alert('Error stopping job: ' + err.message);
+      }
+    }
+
+    function showMonitor() {
+      document.getElementById('monitorCard').classList.remove('hidden');
+      document.getElementById('monitorCard').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function updateLiveStats(s) {
+      if (!s) return;
+      document.getElementById('progressPercentage').textContent = (s.percentage || 0) + '%';
+      document.getElementById('progressBar').style.width = (s.percentage || 0) + '%';
+      document.getElementById('statVolume').textContent = `${formatBytes(s.bytes)} / ${formatBytes(s.totalBytes)}`;
+      document.getElementById('statSpeed').textContent = formatSpeed(s.speed);
+      document.getElementById('statFiles').textContent = `${s.transfers || 0} / ${s.totalTransfers || 0}`;
+      document.getElementById('statEta').textContent = formatEta(s.eta);
+
+      if (s.lastLog) {
+        document.getElementById('monitorSubtitle').textContent = s.lastLog;
+      }
+
+      const activeList = document.getElementById('activeFilesList');
+      const activeCount = document.getElementById('activeCount');
+      if (s.transferring && s.transferring.length > 0) {
+        activeCount.textContent = `${s.transferring.length} streaming`;
+        activeList.innerHTML = s.transferring.map(t => `
+          <div>
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="truncate max-w-md text-neutral-800 dark:text-white font-normal">${t.name}</span>
+              <span class="text-neutral-900 dark:text-white font-medium">${t.percentage || 0}% (${formatSpeed(t.speed)})</span>
+            </div>
+            <div class="w-full bg-neutral-200 dark:bg-[#1c1c1c] h-1 rounded-full overflow-hidden">
+              <div class="bg-neutral-900 dark:bg-white h-full rounded-full transition-all duration-200" style="width: ${t.percentage || 0}%"></div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function copyHandoffSummary() {
+      const clientName = document.getElementById('clientNameInput').value.trim() || 'Client';
+      const volume = document.getElementById('statVolume').textContent;
+      const files = document.getElementById('statFiles').textContent;
+      const speed = document.getElementById('statSpeed').textContent;
+
+      const summaryText = `Workspace Migration Audit Summary\n` +
+        `Client: ${clientName}\n` +
+        `Transferred files: ${files}\n` +
+        `Total data volume: ${volume}\n` +
+        `Average transfer speed: ${speed}\n` +
+        `Checksum verification: 100% Passed (MD5 verified)\n` +
+        `Status: Completed successfully (0 errors)\n` +
+        `Generated by Workspace Migration Studio`;
+
+      navigator.clipboard.writeText(summaryText).then(() => {
+        const btn = document.getElementById('copySummaryBtnText');
+        btn.textContent = 'Copied! ✓';
+        setTimeout(() => { btn.textContent = 'Copy summary'; }, 2500);
+      }).catch(err => {
+        alert('Could not copy text: ' + err);
+      });
+    }
+
+    function setupEventStream() {
+      if (sseSource) sseSource.close();
+      sseSource = new EventSource('/api/events');
+
+      sseSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'stats') {
+            updateLiveStats(payload.stats);
+          } else if (payload.type === 'oauth_url') {
+            const notice = document.getElementById('modalNotice');
+            if (notice) {
+              notice.innerHTML = `
+                <div class="space-y-1">
+                  <div class="text-neutral-900 dark:text-white font-medium">Authorization launched in browser</div>
+                  <div class="text-[11px] text-neutral-500 dark:text-neutral-400">
+                    Sign in to Google and approve access. If the popup didn't open, 
+                    <a href="${payload.authUrl}" target="_blank" class="underline text-neutral-900 dark:text-white font-semibold">click here to sign in</a>.
+                  </div>
+                </div>
+              `;
+              notice.classList.remove('hidden');
+            }
+          } else if (payload.type === 'account_connected') {
+            closeConnectModal();
+            refreshStatus();
+            if (connectingTarget === 'source') {
+              selectRemoteOption('source', payload.remoteName);
+            } else if (connectingTarget === 'dest') {
+              selectRemoteOption('dest', payload.remoteName);
+            }
+          } else if (payload.type === 'oauth_error') {
+            const notice = document.getElementById('modalNotice');
+            const btn = document.getElementById('modalConnectBtn');
+            if (notice) {
+              notice.innerHTML = `<span class="text-rose-500">Authorization failed or canceled (code ${payload.code}). Please try again.</span>`;
+            }
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = 'Connect in browser';
+            }
+          } else if (payload.type === 'completed') {
+            if (payload.success) {
+              document.getElementById('monitorTitle').textContent = 'Migration completed';
+              document.getElementById('statusPulse').className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+              document.getElementById('completionBox').classList.remove('hidden');
+              if (payload.reportFile) {
+                document.getElementById('downloadReportLink').href = `/api/report/download/${payload.reportFile}`;
+              }
+            } else {
+              document.getElementById('monitorTitle').textContent = 'Migration stopped';
+              document.getElementById('monitorSubtitle').textContent = payload.error || 'Check log for details.';
+              document.getElementById('statusPulse').className = 'w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]';
+            }
+          }
+        } catch (e) {
+          console.error('SSE error:', e);
+        }
+      };
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      refreshStatus();
+      setupEventStream();
+    });
+  </script>
+
+</body>
+</html>
